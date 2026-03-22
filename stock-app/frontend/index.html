@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockForge — Trading Intelligence Platform</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.6/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.10.3/Recharts.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #111827;
+            --bg-card: #151d2e;
+            --bg-input: #1a2235;
+            --border: #1e2a3e;
+            --border-active: #3b82f6;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-blue: #3b82f6;
+            --accent-cyan: #06b6d4;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-orange: #f59e0b;
+            --accent-purple: #8b5cf6;
+            --accent-green-bg: rgba(16,185,129,0.12);
+            --accent-red-bg: rgba(239,68,68,0.12);
+            --accent-blue-bg: rgba(59,130,246,0.12);
+            --accent-orange-bg: rgba(245,158,11,0.12);
+            --gradient-brand: linear-gradient(135deg, #3b82f6, #06b6d4);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.4);
+            --radius: 10px;
+            --radius-sm: 6px;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        ::-webkit-scrollbar { width:6px; height:6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius:3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        
+        /* Layout */
+        .app-shell { display:flex; flex-direction:column; min-height:100vh; }
+        .top-bar {
+            display:flex; align-items:center; justify-content:space-between;
+            padding:12px 24px; background:var(--bg-secondary);
+            border-bottom:1px solid var(--border); z-index:100;
+        }
+        .brand { display:flex; align-items:center; gap:10px; }
+        .brand-icon {
+            width:32px; height:32px; background:var(--gradient-brand);
+            border-radius:8px; display:flex; align-items:center; justify-content:center;
+            font-weight:700; font-size:16px; color:#fff;
+        }
+        .brand-name { font-weight:700; font-size:18px; letter-spacing:-0.5px; }
+        .brand-sub { color:var(--text-muted); font-size:11px; margin-left:8px; text-transform:uppercase; letter-spacing:1px; }
+
+        .search-area { display:flex; align-items:center; gap:8px; flex:1; max-width:480px; margin:0 32px; }
+        .search-input {
+            flex:1; padding:8px 14px; background:var(--bg-input); border:1px solid var(--border);
+            border-radius:var(--radius-sm); color:var(--text-primary); font-size:14px;
+            font-family:'JetBrains Mono',monospace; outline:none; transition:border 0.2s;
+        }
+        .search-input:focus { border-color:var(--accent-blue); }
+        .search-input::placeholder { color:var(--text-muted); }
+        .search-btn {
+            padding:8px 20px; background:var(--accent-blue); color:#fff; border:none;
+            border-radius:var(--radius-sm); font-size:13px; font-weight:600; cursor:pointer;
+            transition:all 0.2s;
+        }
+        .search-btn:hover { background:#2563eb; }
+        .search-btn:disabled { opacity:0.5; cursor:not-allowed; }
+
+        .period-pills { display:flex; gap:4px; }
+        .period-pill {
+            padding:5px 12px; border:1px solid var(--border); background:transparent;
+            color:var(--text-secondary); border-radius:var(--radius-sm); font-size:12px;
+            cursor:pointer; transition:all 0.15s; font-family:'JetBrains Mono',monospace;
+        }
+        .period-pill.active { background:var(--accent-blue); color:#fff; border-color:var(--accent-blue); }
+
+        /* Main Content */
+        .main-content { flex:1; display:flex; flex-direction:column; gap:16px; padding:16px 24px 24px; }
+
+        /* Stock Header */
+        .stock-header {
+            display:flex; align-items:flex-end; gap:20px; padding:16px 0;
+        }
+        .stock-ticker { font-size:28px; font-weight:700; font-family:'JetBrains Mono',monospace; letter-spacing:-1px; }
+        .stock-name { color:var(--text-secondary); font-size:14px; margin-bottom:2px; }
+        .stock-price { font-size:28px; font-weight:700; font-family:'JetBrains Mono',monospace; }
+        .stock-change { font-size:14px; font-weight:600; padding:3px 8px; border-radius:4px; }
+        .stock-change.up { color:var(--accent-green); background:var(--accent-green-bg); }
+        .stock-change.down { color:var(--accent-red); background:var(--accent-red-bg); }
+        .stock-meta { color:var(--text-muted); font-size:12px; display:flex; gap:16px; }
+        .stock-meta span { display:flex; align-items:center; gap:4px; }
+
+        /* Tab Navigation */
+        .tabs { display:flex; gap:2px; background:var(--bg-secondary); border-radius:var(--radius); padding:3px; width:fit-content; }
+        .tab-btn {
+            padding:8px 18px; border:none; background:transparent; color:var(--text-secondary);
+            font-size:13px; font-weight:500; cursor:pointer; border-radius:7px; transition:all 0.2s;
+        }
+        .tab-btn.active { background:var(--bg-card); color:var(--text-primary); box-shadow:0 2px 8px rgba(0,0,0,0.2); }
+        .tab-btn:hover:not(.active) { color:var(--text-primary); }
+
+        /* Cards */
+        .card {
+            background:var(--bg-card); border:1px solid var(--border);
+            border-radius:var(--radius); padding:20px; position:relative;
+        }
+        .card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+        .card-title { font-size:14px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary); }
+        .card-badge {
+            padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700;
+            text-transform:uppercase; letter-spacing:0.5px;
+        }
+        .badge-buy { background:var(--accent-green-bg); color:var(--accent-green); }
+        .badge-sell { background:var(--accent-red-bg); color:var(--accent-red); }
+        .badge-hold { background:var(--accent-orange-bg); color:var(--accent-orange); }
+
+        /* Grid layouts */
+        .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+        .grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+        .grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+
+        /* Stat boxes */
+        .stat-box { padding:14px; background:var(--bg-secondary); border-radius:var(--radius-sm); }
+        .stat-label { font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+        .stat-value { font-size:20px; font-weight:700; font-family:'JetBrains Mono',monospace; }
+        .stat-value.green { color:var(--accent-green); }
+        .stat-value.red { color:var(--accent-red); }
+        .stat-value.blue { color:var(--accent-blue); }
+        .stat-value.orange { color:var(--accent-orange); }
+
+        /* Charts */
+        .chart-container { width:100%; height:350px; }
+        .chart-container-sm { width:100%; height:280px; }
+
+        /* Signal indicator */
+        .signal-bar { display:flex; align-items:center; gap:8px; margin:8px 0; }
+        .signal-dot { width:10px; height:10px; border-radius:50%; }
+        .signal-dot.buy { background:var(--accent-green); box-shadow:0 0 8px var(--accent-green); }
+        .signal-dot.sell { background:var(--accent-red); box-shadow:0 0 8px var(--accent-red); }
+        .signal-dot.hold { background:var(--accent-orange); box-shadow:0 0 8px var(--accent-orange); }
+
+        /* Trade form */
+        .trade-form { display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap; }
+        .form-group { display:flex; flex-direction:column; gap:4px; }
+        .form-label { font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; }
+        .form-input {
+            padding:8px 12px; background:var(--bg-input); border:1px solid var(--border);
+            border-radius:var(--radius-sm); color:var(--text-primary); font-size:13px;
+            font-family:'JetBrains Mono',monospace; width:120px; outline:none;
+        }
+        .form-input:focus { border-color:var(--accent-blue); }
+        .btn-buy {
+            padding:8px 20px; background:var(--accent-green); color:#fff; border:none;
+            border-radius:var(--radius-sm); font-size:13px; font-weight:600; cursor:pointer;
+        }
+        .btn-sell {
+            padding:8px 20px; background:var(--accent-red); color:#fff; border:none;
+            border-radius:var(--radius-sm); font-size:13px; font-weight:600; cursor:pointer;
+        }
+        .btn-reset {
+            padding:8px 16px; background:var(--bg-input); color:var(--text-secondary); border:1px solid var(--border);
+            border-radius:var(--radius-sm); font-size:12px; cursor:pointer;
+        }
+
+        /* Table */
+        .data-table { width:100%; border-collapse:collapse; font-size:13px; }
+        .data-table th {
+            text-align:left; padding:8px 12px; border-bottom:1px solid var(--border);
+            color:var(--text-muted); font-size:11px; text-transform:uppercase; letter-spacing:0.5px; font-weight:500;
+        }
+        .data-table td { padding:8px 12px; border-bottom:1px solid var(--border); font-family:'JetBrains Mono',monospace; font-size:12px; }
+
+        /* Strategy selector */
+        .strategy-select {
+            padding:6px 12px; background:var(--bg-input); border:1px solid var(--border);
+            border-radius:var(--radius-sm); color:var(--text-primary); font-size:12px; cursor:pointer;
+        }
+
+        /* Loading spinner */
+        .loading { display:flex; align-items:center; justify-content:center; padding:60px; color:var(--text-muted); }
+        .spinner {
+            width:20px; height:20px; border:2px solid var(--border); border-top-color:var(--accent-blue);
+            border-radius:50%; animation:spin 0.6s linear infinite; margin-right:10px;
+        }
+        @keyframes spin { to { transform:rotate(360deg); } }
+
+        /* Empty state */
+        .empty-state {
+            text-align:center; padding:80px 20px; color:var(--text-muted);
+        }
+        .empty-state h2 { font-size:20px; margin-bottom:8px; color:var(--text-secondary); }
+        .empty-state p { font-size:14px; }
+
+        /* Tooltip */
+        .recharts-tooltip-wrapper .custom-tooltip {
+            background:var(--bg-card) !important; border:1px solid var(--border) !important;
+            border-radius:var(--radius-sm); padding:10px 14px; font-size:12px;
+        }
+
+        /* Responsive */
+        @media (max-width:1024px) {
+            .grid-4 { grid-template-columns: repeat(2,1fr); }
+            .grid-3 { grid-template-columns: 1fr; }
+            .grid-2 { grid-template-columns: 1fr; }
+        }
+        @media (max-width:768px) {
+            .top-bar { flex-wrap:wrap; gap:8px; }
+            .search-area { max-width:100%; margin:0; order:3; }
+            .period-pills { order:4; }
+        }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef } = React;
+const {
+    LineChart, Line, AreaChart, Area, BarChart, Bar,
+    ComposedChart, XAxis, YAxis, CartesianGrid, Tooltip,
+    Legend, ResponsiveContainer, ReferenceLine, Brush,
+    Cell, Scatter, ScatterChart
+} = Recharts;
+
+const API = ""; // same origin
+
+// ── Utility Functions ─────────────────────────────────
+const fmt = (n, decimals=2) => n != null ? Number(n).toFixed(decimals) : "—";
+const fmtK = (n) => {
+    if (n == null) return "—";
+    if (Math.abs(n) >= 1e9) return (n/1e9).toFixed(1)+"B";
+    if (Math.abs(n) >= 1e6) return (n/1e6).toFixed(1)+"M";
+    if (Math.abs(n) >= 1e3) return (n/1e3).toFixed(1)+"K";
+    return n.toFixed(0);
+};
+const pctColor = (v) => v > 0 ? "green" : v < 0 ? "red" : "";
+const signalBadge = (action) => {
+    const cls = action === "BUY" ? "badge-buy" : action === "SELL" ? "badge-sell" : "badge-hold";
+    return <span className={`card-badge ${cls}`}>{action}</span>;
+};
+
+// ── Custom Tooltip ────────────────────────────────────
+const CustomTooltip = ({ active, payload, label }) => {
+    if (!active || !payload?.length) return null;
+    return (
+        <div className="custom-tooltip" style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:6,padding:"10px 14px",fontSize:12}}>
+            <div style={{color:"var(--text-muted)",marginBottom:4}} className="mono">{label}</div>
+            {payload.map((p,i) => (
+                <div key={i} style={{color:p.color||"var(--text-primary)",display:"flex",justifyContent:"space-between",gap:16}}>
+                    <span>{p.name}</span>
+                    <span className="mono" style={{fontWeight:600}}>{typeof p.value==="number"?fmt(p.value):p.value}</span>
+                </div>
+            ))}
+        </div>
+    );
+};
+
+// ── API Hook ──────────────────────────────────────────
+function useFetch(url, deps=[]) {
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    
+    const fetchData = useCallback(async () => {
+        if (!url) return;
+        setLoading(true);
+        setError(null);
+        try {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const json = await res.json();
+            if (json.error) throw new Error(json.error);
+            setData(json);
+        } catch (e) {
+            setError(e.message);
+        }
+        setLoading(false);
+    }, [url]);
+
+    useEffect(() => { fetchData(); }, [fetchData, ...deps]);
+    return { data, loading, error, refetch: fetchData };
+}
+
+// ── Price Chart Component ─────────────────────────────
+function PriceChart({ data, indicators }) {
+    if (!data?.length) return null;
+    
+    // Merge indicator data with price data
+    const merged = data.map(d => {
+        const ind = indicators?.data?.find(i => i.date === d.date);
+        return { ...d, ...ind };
+    });
+
+    return (
+        <div className="card">
+            <div className="card-header">
+                <span className="card-title">Price & Indicators</span>
+                {indicators?.summary && signalBadge(indicators.summary.action)}
+            </div>
+            <div className="chart-container">
+                <ResponsiveContainer>
+                    <ComposedChart data={merged} margin={{top:5,right:10,left:10,bottom:5}}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                        <XAxis dataKey="date" tick={{fontSize:10,fill:"var(--text-muted)"}} tickFormatter={d=>d?.slice(5)} interval="preserveStartEnd" />
+                        <YAxis domain={["auto","auto"]} tick={{fontSize:10,fill:"var(--text-muted)"}} tickFormatter={v=>fmtK(v)} />
+                        <Tooltip content={<CustomTooltip/>} />
+                        <Area type="monotone" dataKey="close" fill="rgba(59,130,246,0.08)" stroke="var(--accent-blue)" strokeWidth={2} name="Close" dot={false} />
+                        <Line type="monotone" dataKey="sma_20" stroke="var(--accent-orange)" strokeWidth={1} dot={false} name="SMA 20" strokeDasharray="4 2" />
+                        <Line type="monotone" dataKey="sma_50" stroke="var(--accent-purple)" strokeWidth={1} dot={false} name="SMA 50" strokeDasharray="4 2" />
+                        <Line type="monotone" dataKey="bb_upper" stroke="rgba(100,116,139,0.4)" strokeWidth={1} dot={false} name="BB Upper" />
+                        <Line type="monotone" dataKey="bb_lower" stroke="rgba(100,116,139,0.4)" strokeWidth={1} dot={false} name="BB Lower" />
+                        <Legend wrapperStyle={{fontSize:11,color:"var(--text-muted)"}} />
+                    </ComposedChart>
+                </ResponsiveContainer>
+            </div>
+        </div>
+    );
+}
+
+// ── RSI & MACD Sub-charts ─────────────────────────────
+function IndicatorCharts({ indicators }) {
+    if (!indicators?.data?.length) return null;
+    const data = indicators.data.filter(d => d.rsi != null);
+    
+    return (
+        <div className="grid-2">
+            <div className="card">
+                <div className="card-title" style={{marginBottom:12}}>RSI (14)</div>
+                <div className="chart-container-sm">
+                    <ResponsiveContainer>
+                        <ComposedChart data={data} margin={{top:5,right:10,left:10,bottom:5}}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                            <XAxis dataKey="date" tick={{fontSize:9,fill:"var(--text-muted)"}} tickFormatter={d=>d?.slice(5)} interval="preserveStartEnd" />
+                            <YAxis domain={[0,100]} tick={{fontSize:10,fill:"var(--text-muted)"}} />
+                            <Tooltip content={<CustomTooltip/>} />
+                            <ReferenceLine y={70} stroke="var(--accent-red)" strokeDasharray="3 3" label={{value:"Overbought",fill:"var(--accent-red)",fontSize:10}} />
+                            <ReferenceLine y={30} stroke="var(--accent-green)" strokeDasharray="3 3" label={{value:"Oversold",fill:"var(--accent-green)",fontSize:10}} />
+                            <Area type="monotone" dataKey="rsi" fill="rgba(139,92,246,0.1)" stroke="var(--accent-purple)" strokeWidth={1.5} dot={false} name="RSI" />
+                        </ComposedChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+            <div className="card">
+                <div className="card-title" style={{marginBottom:12}}>MACD</div>
+                <div className="chart-container-sm">
+                    <ResponsiveContainer>
+                        <ComposedChart data={data} margin={{top:5,right:10,left:10,bottom:5}}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                            <XAxis dataKey="date" tick={{fontSize:9,fill:"var(--text-muted)"}} tickFormatter={d=>d?.slice(5)} interval="preserveStartEnd" />
+                            <YAxis tick={{fontSize:10,fill:"var(--text-muted)"}} />
+                            <Tooltip content={<CustomTooltip/>} />
+                            <ReferenceLine y={0} stroke="var(--text-muted)" strokeDasharray="2 2" />
+                            <Bar dataKey="macd_histogram" name="Histogram" fill="var(--accent-cyan)" opacity={0.4} />
+                            <Line type="monotone" dataKey="macd" stroke="var(--accent-blue)" strokeWidth={1.5} dot={false} name="MACD" />
+                            <Line type="monotone" dataKey="macd_signal_line" stroke="var(--accent-red)" strokeWidth={1.5} dot={false} name="Signal" />
+                        </ComposedChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ── Signal Summary Card ───────────────────────────────
+function SignalSummary({ indicators }) {
+    const s = indicators?.summary;
+    if (!s) return null;
+    
+    return (
+        <div className="card">
+            <div className="card-title" style={{marginBottom:12}}>Signal Analysis</div>
+            <div className="grid-4">
+                <div className="stat-box">
+                    <div className="stat-label">Composite</div>
+                    <div className={`stat-value ${pctColor(s.composite_score)}`}>{s.composite_score > 0 ? "+" : ""}{s.composite_score}/4</div>
+                </div>
+                <div className="stat-box">
+                    <div className="stat-label">RSI</div>
+                    <div className={`stat-value ${s.rsi < 30 ? "green" : s.rsi > 70 ? "red" : ""}`}>{fmt(s.rsi,1)}</div>
+                </div>
+                <div className="stat-box">
+                    <div className="stat-label">MA Trend</div>
+                    <div className={`stat-value ${s.ma_trend==="bullish"?"green":s.ma_trend==="bearish"?"red":""}`}>{s.ma_trend}</div>
+                </div>
+                <div className="stat-box">
+                    <div className="stat-label">BB Position</div>
+                    <div className="stat-value" style={{fontSize:14}}>{s.bb_position?.replace(/_/g," ")}</div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ── Monte Carlo Tab ───────────────────────────────────
+function MonteCarloView({ ticker, period }) {
+    const [days, setDays] = useState(30);
+    const [sims, setSims] = useState(500);
+    const { data, loading, error } = useFetch(
+        ticker ? `${API}/api/montecarlo/${ticker}?period=${period}&forecast_days=${days}&simulations=${sims}` : null,
+        [ticker, period, days, sims]
+    );
+
+    if (loading) return <div className="loading"><div className="spinner"></div>Running Monte Carlo simulation...</div>;
+    if (error) return <div className="loading" style={{color:"var(--accent-red)"}}>Error: {error}</div>;
+    if (!data) return null;
+
+    const st = data.stats;
+    return (
+        <div style={{display:"flex",flexDirection:"column",gap:16}}>
+            <div className="card">
+                <div className="card-header">
+                    <span className="card-title">Monte Carlo Forecast ({st.num_simulations} sims, {st.forecast_days} days)</span>
+                    <div style={{display:"flex",gap:8}}>
+                        <select className="strategy-select" value={days} onChange={e=>setDays(+e.target.value)}>
+                            <option value={14}>14 days</option>
+                            <option value={30}>30 days</option>
+                            <option value={60}>60 days</option>
+                            <option value={90}>90 days</option>
+                        </select>
+                    </div>
+                </div>
+                <div className="chart-container">
+                    <ResponsiveContainer>
+                        <AreaChart data={data.forecast} margin={{top:5,right:10,left:10,bottom:5}}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                            <XAxis dataKey="date" tick={{fontSize:10,fill:"var(--text-muted)"}} tickFormatter={d=>d?.slice(5)} />
+                            <YAxis domain={["auto","auto"]} tick={{fontSize:10,fill:"var(--text-muted)"}} tickFormatter={v=>fmtK(v)} />
+                            <Tooltip content={<CustomTooltip/>} />
+                            <Area type="monotone" dataKey="p95" fill="rgba(59,130,246,0.05)" stroke="none" name="P95" />
+                            <Area type="monotone" dataKey="p75" fill="rgba(59,130,246,0.1)" stroke="none" name="P75" />
+                            <Area type="monotone" dataKey="p25" fill="rgba(59,130,246,0.15)" stroke="none" name="P25" />
+                            <Area type="monotone" dataKey="p5" fill="rgba(59,130,246,0.05)" stroke="none" name="P5" />
+                            <Line type="monotone" dataKey="median" stroke="var(--accent-cyan)" strokeWidth={2} dot={false} name="Median" />
+                            <ReferenceLine y={st.current_price} stroke="var(--accent-orange)" strokeDasharray="4 4" label={{value:`Current $${st.current_price}`,fill:"var(--accent-orange)",fontSize:11}} />
+                        </AreaChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+            <div className="grid-4">
+                <div className="stat-box">
+                    <div className="stat-label">Expected Return</div>
+                    <div className={`stat-value ${pctColor(st.expected_return_pct)}`}>{st.expected_return_pct > 0?"+":""}{st.expected_return_pct}%</div>
+                </div>
+                <div className="stat-box">
+                    <div className="stat-label">Prob. of Profit</div>
+                    <div className={`stat-value ${st.prob_profit > 50?"green":"red"}`}>{st.prob_profit}%</div>
+                </div>
+                <div className="stat-box">
+                    <div className="stat-label">VaR (5%)</div>
+                    <div className="stat-value red">{st.var_5_pct}%</div>
+                </div>
+                <div className="stat-box">
+                    <div className="stat-label">Ann. Volatility</div>
+                    <div className="stat-value orange">{(st.annualized_volatility*100).toFixed(1)}%</div>
+                </div>
+            </div>
+            <div className="grid-3">
+                <div className="stat-box">
+                    <div className="stat-label">Best Case (95th)</div>
+                    <div className="stat-value green mono">${fmt(st.best_case_95)}</div>
+                </div>
+                <div className="stat-box">
+                    <div className="stat-label">Expected Price</div>
+                    <div className="stat-value blue mono">${fmt(st.expected_final_price)}</div>
+                </div>
+                <div className="stat-box">
+                    <div className="stat-label">Worst Case (5th)</div>
+                    <div className="stat-value red mono">${fmt(st.worst_case_5)}</div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ── ML Prediction Tab ─────────────────────────────────
+function MLView({ ticker, period }) {
+    const { data, loading, error } = useFetch(
+        ticker ? `${API}/api/ml/${ticker}?period=2y&forecast_days=30` : null,
+        [ticker]
+    );
+
+    if (loading) return <div className="loading"><div className="spinner"></div>Training LSTM model... this may take a moment</div>;
+    if (error) return <div className="loading" style={{color:"var(--accent-red)"}}>Error: {error}</div>;
+    if (!data) return null;
+
+    // Combine historical + forecast for chart
+    const chartData = [
+        ...data.historical_predictions.map(d => ({ ...d, type: "historical" })),
+        ...data.forecast.map(d => ({ ...d, type: "forecast" })),
+    ];
+
+    const m = data.metrics;
+    const trendColor = data.trend === "BULLISH" ? "green" : data.trend === "BEARISH" ? "red" : "orange";
+
+    return (
+        <div style={{display:"flex",flexDirection:"column",gap:16}}>
+            <div className="card">
+                <div className="card-header">
+                    <span className="card-title">{data.model_type} Prediction</span>
+                    <span className={`card-badge badge-${data.trend==="BULLISH"?"buy":data.trend==="BEARISH"?"sell":"hold"}`}>{data.trend} ({data.trend_change_pct>0?"+":""}{data.trend_change_pct}%)</span>
+                </div>
+                <div className="chart-container">
+                    <ResponsiveContainer>
+                        <LineChart data={chartData} margin={{top:5,right:10,left:10,bottom:5}}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                            <XAxis dataKey="date" tick={{fontSize:10,fill:"var(--text-muted)"}} tickFormatter={d=>d?.slice(5)} interval="preserveStartEnd" />
+                            <YAxis domain={["auto","auto"]} tick={{fontSize:10,fill:"var(--text-muted)"}} tickFormatter={v=>fmtK(v)} />
+                            <Tooltip content={<CustomTooltip/>} />
+                            <Line type="monotone" dataKey="actual" stroke="var(--accent-blue)" strokeWidth={2} dot={false} name="Actual" connectNulls={false} />
+                            <Line type="monotone" dataKey="predicted" stroke="var(--accent-cyan)" strokeWidth={2} dot={false} name="Predicted" strokeDasharray="6 3" />
+                            <ReferenceLine x={data.historical_predictions[data.historical_predictions.length-1]?.date} stroke="var(--text-muted)" strokeDasharray="4 4" label={{value:"Forecast →",fill:"var(--text-muted)",fontSize:10}} />
+                        </LineChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+            <div className="grid-4">
+                <div className="stat-box">
+                    <div className="stat-label">Direction Accuracy</div>
+                    <div className={`stat-value ${m.direction_accuracy > 50 ? "green" : "red"}`}>{m.direction_accuracy}%</div>
+                </div>
+                <div className="stat-box">
+                    <div className="stat-label">MAPE</div>
+                    <div className="stat-value mono">{m.mape}%</div>
+                </div>
+                <div className="stat-box">
+                    <div className="stat-label">RMSE</div>
+                    <div className="stat-value mono">${fmt(m.rmse)}</div>
+                </div>
+                <div className="stat-box">
+                    <div className="stat-label">Predicted Price</div>
+                    <div className={`stat-value ${trendColor} mono`}>${fmt(data.predicted_final_price)}</div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ── Backtest Tab ──────────────────────────────────────
+function BacktestView({ ticker, period }) {
+    const [strategy, setStrategy] = useState("composite");
+    const [capital, setCapital] = useState(10000);
+    const { data, loading, error } = useFetch(
+        ticker ? `${API}/api/backtest/${ticker}?period=${period}&strategy=${strategy}&initial_capital=${capital}` : null,
+        [ticker, period, strategy, capital]
+    );
+
+    if (loading) return <div className="loading"><div className="spinner"></div>Running backtest...</div>;
+    if (error) return <div className="loading" style={{color:"var(--accent-red)"}}>Error: {error}</div>;
+    if (!data) return null;
+
+    return (
+        <div style={{display:"flex",flexDirection:"column",gap:16}}>
+            <div className="card">
+                <div className="card-header">
+                    <span className="card-title">Backtest: {strategy} strategy</span>
+                    <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                        <select className="strategy-select" value={strategy} onChange={e=>setStrategy(e.target.value)}>
+                            <option value="composite">Composite (All)</option>
+                            <option value="ma_crossover">MA Crossover</option>
+                            <option value="rsi">RSI</option>
+                            <option value="macd">MACD</option>
+                            <option value="bollinger">Bollinger Bands</option>
+                        </select>
+                    </div>
+                </div>
+                <div className="chart-container">
+                    <ResponsiveContainer>
+                        <ComposedChart data={data.portfolio_history} margin={{top:5,right:10,left:10,bottom:5}}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                            <XAxis dataKey="date" tick={{fontSize:10,fill:"var(--text-muted)"}} tickFormatter={d=>d?.slice(5)} interval="preserveStartEnd" />
+                            <YAxis yAxisId="portfolio" domain={["auto","auto"]} tick={{fontSize:10,fill:"var(--text-muted)"}} tickFormatter={v=>"$"+fmtK(v)} />
+                            <YAxis yAxisId="price" orientation="right" domain={["auto","auto"]} tick={{fontSize:10,fill:"var(--text-muted)"}} tickFormatter={v=>fmtK(v)} />
+                            <Tooltip content={<CustomTooltip/>} />
+                            <Area yAxisId="portfolio" type="monotone" dataKey="portfolio_value" fill="rgba(16,185,129,0.1)" stroke="var(--accent-green)" strokeWidth={2} name="Portfolio" dot={false} />
+                            <Line yAxisId="price" type="monotone" dataKey="price" stroke="var(--text-muted)" strokeWidth={1} dot={false} name="Stock Price" opacity={0.5} />
+                            <ReferenceLine yAxisId="portfolio" y={data.initial_capital} stroke="var(--accent-orange)" strokeDasharray="4 4" />
+                        </ComposedChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+            <div className="grid-4">
+                <div className="stat-box">
+                    <div className="stat-label">Strategy Return</div>
+                    <div className={`stat-value ${pctColor(data.total_return_pct)}`}>{data.total_return_pct > 0 ? "+" : ""}{data.total_return_pct}%</div>
+                </div>
+                <div className="stat-box">
+                    <div className="stat-label">Buy & Hold Return</div>
+                    <div className={`stat-value ${pctColor(data.buy_hold_return_pct)}`}>{data.buy_hold_return_pct > 0 ? "+" : ""}{data.buy_hold_return_pct}%</div>
+                </div>
+                <div className="stat-box">
+                    <div className="stat-label">Alpha</div>
+                    <div className={`stat-value ${pctColor(data.alpha)}`}>{data.alpha > 0 ? "+" : ""}{data.alpha}%</div>
+                </div>
+                <div className="stat-box">
+                    <div className="stat-label">Sharpe Ratio</div>
+                    <div className={`stat-value ${data.sharpe_ratio > 1?"green":data.sharpe_ratio < 0?"red":""}`}>{data.sharpe_ratio}</div>
+                </div>
+            </div>
+            <div className="grid-4">
+                <div className="stat-box">
+                    <div className="stat-label">Final Value</div>
+                    <div className="stat-value mono">${fmtK(data.final_value)}</div>
+                </div>
+                <div className="stat-box">
+                    <div className="stat-label">Max Drawdown</div>
+                    <div className="stat-value red">-{data.max_drawdown_pct}%</div>
+                </div>
+                <div className="stat-box">
+                    <div className="stat-label">Win Rate</div>
+                    <div className={`stat-value ${data.win_rate_pct > 50?"green":"red"}`}>{data.win_rate_pct}%</div>
+                </div>
+                <div className="stat-box">
+                    <div className="stat-label">Total Trades</div>
+                    <div className="stat-value mono">{data.total_trades}</div>
+                </div>
+            </div>
+            {data.trades?.length > 0 && (
+                <div className="card">
+                    <div className="card-title" style={{marginBottom:12}}>Trade Log</div>
+                    <div style={{maxHeight:300,overflowY:"auto"}}>
+                        <table className="data-table">
+                            <thead><tr><th>Date</th><th>Type</th><th>Price</th><th>Shares</th><th>P&L</th></tr></thead>
+                            <tbody>
+                                {data.trades.map((t,i) => (
+                                    <tr key={i}>
+                                        <td>{t.date}</td>
+                                        <td style={{color:t.type==="BUY"?"var(--accent-green)":"var(--accent-red)",fontWeight:600}}>{t.type}</td>
+                                        <td>${fmt(t.price)}</td>
+                                        <td>{t.shares}</td>
+                                        <td style={{color:pctColor(t.pnl)==="green"?"var(--accent-green)":pctColor(t.pnl)==="red"?"var(--accent-red)":"var(--text-secondary)"}}>
+                                            {t.pnl != null ? `$${fmt(t.pnl)}` : "—"}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ── Portfolio Tab ─────────────────────────────────────
+function PortfolioView({ ticker, currentPrice }) {
+    const [portfolio, setPortfolio] = useState(null);
+    const [shares, setShares] = useState(10);
+    const [msg, setMsg] = useState(null);
+
+    const loadPortfolio = async () => {
+        try {
+            const res = await fetch(`${API}/api/portfolio`);
+            const data = await res.json();
+            setPortfolio(data);
+        } catch (e) { console.error(e); }
+    };
+
+    useEffect(() => { loadPortfolio(); }, []);
+
+    const handleTrade = async (type) => {
+        try {
+            const res = await fetch(`${API}/api/portfolio/${type}`, {
+                method: "POST",
+                headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({ ticker, shares: parseInt(shares) }),
+            });
+            const data = await res.json();
+            if (data.error) { setMsg({ type:"error", text:data.error }); }
+            else { setMsg({ type:"success", text:`${type.toUpperCase()}: ${shares} shares of ${ticker} at $${fmt(data.price || currentPrice)}` }); }
+            loadPortfolio();
+        } catch (e) { setMsg({ type:"error", text:e.message }); }
+    };
+
+    const handleReset = async () => {
+        await fetch(`${API}/api/portfolio/reset`, { method:"POST" });
+        setMsg({ type:"success", text:"Portfolio reset to $100,000" });
+        loadPortfolio();
+    };
+
+    return (
+        <div style={{display:"flex",flexDirection:"column",gap:16}}>
+            {/* Trade Form */}
+            <div className="card">
+                <div className="card-title" style={{marginBottom:12}}>Trade {ticker || "—"}</div>
+                <div className="trade-form">
+                    <div className="form-group">
+                        <span className="form-label">Shares</span>
+                        <input className="form-input" type="number" min="1" value={shares} onChange={e=>setShares(e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                        <span className="form-label">Market Price</span>
+                        <input className="form-input" type="text" value={currentPrice ? `$${fmt(currentPrice)}` : "—"} disabled />
+                    </div>
+                    <button className="btn-buy" onClick={()=>handleTrade("buy")} disabled={!ticker}>Buy</button>
+                    <button className="btn-sell" onClick={()=>handleTrade("sell")} disabled={!ticker}>Sell</button>
+                    <button className="btn-reset" onClick={handleReset}>Reset Portfolio</button>
+                </div>
+                {msg && (
+                    <div style={{marginTop:10,padding:"8px 12px",borderRadius:6,fontSize:13,
+                        background:msg.type==="error"?"var(--accent-red-bg)":"var(--accent-green-bg)",
+                        color:msg.type==="error"?"var(--accent-red)":"var(--accent-green)"}}>
+                        {msg.text}
+                    </div>
+                )}
+            </div>
+            
+            {/* Portfolio Summary */}
+            {portfolio && (
+                <>
+                    <div className="grid-4">
+                        <div className="stat-box">
+                            <div className="stat-label">Total Value</div>
+                            <div className="stat-value blue mono">${fmtK(portfolio.total_portfolio_value)}</div>
+                        </div>
+                        <div className="stat-box">
+                            <div className="stat-label">Cash</div>
+                            <div className="stat-value mono">${fmtK(portfolio.cash)}</div>
+                        </div>
+                        <div className="stat-box">
+                            <div className="stat-label">Unrealized P&L</div>
+                            <div className={`stat-value ${pctColor(portfolio.unrealized_pnl)}`}>${fmt(portfolio.unrealized_pnl)}</div>
+                        </div>
+                        <div className="stat-box">
+                            <div className="stat-label">Realized P&L</div>
+                            <div className={`stat-value ${pctColor(portfolio.realized_pnl)}`}>${fmt(portfolio.realized_pnl)}</div>
+                        </div>
+                    </div>
+                    {portfolio.holdings?.length > 0 && (
+                        <div className="card">
+                            <div className="card-title" style={{marginBottom:12}}>Holdings</div>
+                            <table className="data-table">
+                                <thead><tr><th>Ticker</th><th>Shares</th><th>Avg Price</th><th>Current</th><th>Market Value</th><th>P&L</th><th>P&L %</th></tr></thead>
+                                <tbody>
+                                    {portfolio.holdings.map((h,i) => (
+                                        <tr key={i}>
+                                            <td style={{fontWeight:600}}>{h.ticker}</td>
+                                            <td>{h.shares}</td>
+                                            <td>${fmt(h.avg_price)}</td>
+                                            <td>${fmt(h.current_price)}</td>
+                                            <td>${fmtK(h.market_value)}</td>
+                                            <td style={{color:pctColor(h.unrealized_pnl)==="green"?"var(--accent-green)":"var(--accent-red)"}}>${fmt(h.unrealized_pnl)}</td>
+                                            <td style={{color:pctColor(h.pnl_pct)==="green"?"var(--accent-green)":"var(--accent-red)"}}>{h.pnl_pct>0?"+":""}{h.pnl_pct}%</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                    {portfolio.recent_transactions?.length > 0 && (
+                        <div className="card">
+                            <div className="card-title" style={{marginBottom:12}}>Recent Transactions</div>
+                            <div style={{maxHeight:250,overflowY:"auto"}}>
+                                <table className="data-table">
+                                    <thead><tr><th>Date</th><th>Type</th><th>Ticker</th><th>Shares</th><th>Price</th><th>Total</th></tr></thead>
+                                    <tbody>
+                                        {portfolio.recent_transactions.slice().reverse().map((t,i) => (
+                                            <tr key={i}>
+                                                <td>{t.date?.slice(0,10)}</td>
+                                                <td style={{color:t.type==="BUY"?"var(--accent-green)":"var(--accent-red)",fontWeight:600}}>{t.type}</td>
+                                                <td style={{fontWeight:600}}>{t.ticker}</td>
+                                                <td>{t.shares}</td>
+                                                <td>${fmt(t.price)}</td>
+                                                <td>${fmt(t.total)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+                </>
+            )}
+        </div>
+    );
+}
+
+// ── Main App ──────────────────────────────────────────
+function App() {
+    const [ticker, setTicker] = useState("");
+    const [searchInput, setSearchInput] = useState("AAPL");
+    const [period, setPeriod] = useState("1y");
+    const [activeTab, setActiveTab] = useState("indicators");
+
+    const { data: stockData, loading: stockLoading } = useFetch(
+        ticker ? `${API}/api/stock/${ticker}?period=${period}` : null, [ticker, period]
+    );
+    const { data: indicators } = useFetch(
+        ticker ? `${API}/api/indicators/${ticker}?period=${period}` : null, [ticker, period]
+    );
+
+    const handleSearch = () => {
+        const t = searchInput.trim().toUpperCase();
+        if (t) setTicker(t);
+    };
+
+    const currentPrice = stockData?.data?.[stockData.data.length - 1]?.close;
+    const prevPrice = stockData?.data?.[stockData.data.length - 2]?.close;
+    const changePct = currentPrice && prevPrice ? ((currentPrice - prevPrice) / prevPrice * 100) : 0;
+
+    const periods = ["1mo","3mo","6mo","1y","2y","5y"];
+    const tabs = [
+        { id:"indicators", label:"Indicators" },
+        { id:"montecarlo", label:"Monte Carlo" },
+        { id:"ml", label:"ML Prediction" },
+        { id:"backtest", label:"Backtest" },
+        { id:"portfolio", label:"Portfolio" },
+    ];
+
+    return (
+        <div className="app-shell">
+            {/* Top Bar */}
+            <div className="top-bar">
+                <div className="brand">
+                    <div className="brand-icon">SF</div>
+                    <span className="brand-name">StockForge</span>
+                    <span className="brand-sub">Trading Intelligence</span>
+                </div>
+                <div className="search-area">
+                    <input
+                        className="search-input"
+                        placeholder="Enter ticker (e.g. AAPL, TSLA, BHP.AX)..."
+                        value={searchInput}
+                        onChange={e => setSearchInput(e.target.value.toUpperCase())}
+                        onKeyDown={e => e.key === "Enter" && handleSearch()}
+                    />
+                    <button className="search-btn" onClick={handleSearch} disabled={stockLoading}>
+                        {stockLoading ? "Loading..." : "Analyze"}
+                    </button>
+                </div>
+                <div className="period-pills">
+                    {periods.map(p => (
+                        <button key={p} className={`period-pill ${period===p?"active":""}`} onClick={()=>setPeriod(p)}>
+                            {p}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <div className="main-content">
+                {/* Empty State */}
+                {!ticker && (
+                    <div className="empty-state">
+                        <h2>Welcome to StockForge</h2>
+                        <p>Enter a stock ticker above to begin analysis. Supports global exchanges (e.g. AAPL, TSLA, BHP.AX, 7203.T)</p>
+                    </div>
+                )}
+
+                {/* Stock Header */}
+                {stockData && (
+                    <div className="stock-header">
+                        <div>
+                            <div className="stock-ticker">{stockData.ticker}</div>
+                            <div className="stock-name">{stockData.meta?.name}</div>
+                        </div>
+                        <div style={{marginLeft:"auto",textAlign:"right"}}>
+                            <div className="stock-price">${fmt(currentPrice)}</div>
+                            <span className={`stock-change ${changePct >= 0 ? "up" : "down"}`}>
+                                {changePct >= 0 ? "▲" : "▼"} {Math.abs(changePct).toFixed(2)}%
+                            </span>
+                        </div>
+                        <div className="stock-meta" style={{display:"flex",flexDirection:"column",gap:2,marginLeft:20}}>
+                            {stockData.meta?.sector && <span>Sector: {stockData.meta.sector}</span>}
+                            {stockData.meta?.market_cap && <span>Mkt Cap: ${fmtK(stockData.meta.market_cap)}</span>}
+                            {stockData.meta?.pe_ratio && <span>P/E: {fmt(stockData.meta.pe_ratio,1)}</span>}
+                        </div>
+                    </div>
+                )}
+
+                {/* Tabs */}
+                {ticker && (
+                    <div className="tabs">
+                        {tabs.map(t => (
+                            <button key={t.id} className={`tab-btn ${activeTab===t.id?"active":""}`} onClick={()=>setActiveTab(t.id)}>
+                                {t.label}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                {/* Tab Content */}
+                {activeTab === "indicators" && stockData && (
+                    <>
+                        <PriceChart data={stockData.data} indicators={indicators} />
+                        <SignalSummary indicators={indicators} />
+                        <IndicatorCharts indicators={indicators} />
+                    </>
+                )}
+                {activeTab === "montecarlo" && ticker && <MonteCarloView ticker={ticker} period={period} />}
+                {activeTab === "ml" && ticker && <MLView ticker={ticker} period={period} />}
+                {activeTab === "backtest" && ticker && <BacktestView ticker={ticker} period={period} />}
+                {activeTab === "portfolio" && <PortfolioView ticker={ticker} currentPrice={currentPrice} />}
+            </div>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>
