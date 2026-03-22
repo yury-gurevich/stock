@@ -3,20 +3,18 @@ QuantDesk — Stock Analysis Platform API
 FastAPI backend tying all modules together.
 """
 import os
-import sys
-from datetime import datetime
 from typing import Optional
 
 import numpy as np
 import pandas as pd
-import yfinance as yf
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from data_fetcher import fetch_stock_data, fetch_stock_info, search_tickers
 from indicators import compute_all_indicators
+from ml_model import train_and_predict
 from monte_carlo import monte_carlo_simulation
 from signals import generate_composite_signal
 from portfolio import Portfolio
@@ -38,6 +36,8 @@ portfolios = {"default": Portfolio(100000.0)}
 
 # ── Pydantic Models ───────────────────────────────────────────────────
 class TradeRequest(BaseModel):
+    """Request body for buy/sell trade operations."""
+
     ticker: str
     shares: int
     price: Optional[float] = None
@@ -45,6 +45,8 @@ class TradeRequest(BaseModel):
 
 
 class BacktestRequest(BaseModel):
+    """Request body for backtesting configuration."""
+
     ticker: str
     strategy: str = "combined"
     period: str = "2y"
@@ -59,14 +61,14 @@ def clean_for_json(obj):
     """Replace NaN/Inf with None for JSON serialization."""
     if isinstance(obj, dict):
         return {k: clean_for_json(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
+    if isinstance(obj, list):
         return [clean_for_json(v) for v in obj]
-    elif isinstance(obj, float) and (np.isnan(obj) or np.isinf(obj)):
+    if isinstance(obj, float) and (np.isnan(obj) or np.isinf(obj)):
         return None
-    elif isinstance(obj, (np.floating,)):
+    if isinstance(obj, (np.floating,)):
         v = float(obj)
         return None if np.isnan(v) or np.isinf(v) else v
-    elif isinstance(obj, (np.integer,)):
+    if isinstance(obj, (np.integer,)):
         return int(obj)
     return obj
 
@@ -112,7 +114,7 @@ async def api_stock_info(ticker: str, period: str = "1y"):
             "data": df_to_records(df),
         })
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @app.get("/api/stock/{ticker}/data")
@@ -122,7 +124,7 @@ async def api_stock_data(ticker: str, period: str = "1y", interval: str = "1d"):
         df = fetch_stock_data(ticker, period=period, interval=interval)
         return {"ticker": ticker, "count": len(df), "data": df_to_records(df)}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @app.get("/api/stock/{ticker}/analysis")
@@ -137,43 +139,60 @@ async def api_analysis(ticker: str, period: str = "1y"):
         latest = df.iloc[-1]
         latest_info = {
             "close": float(latest["close"]),
-            "rsi": float(latest.get("rsi_14", 0)) if pd.notna(latest.get("rsi_14")) else None,
-            "macd": float(latest.get("macd", 0)) if pd.notna(latest.get("macd")) else None,
-            "sma_20": float(latest.get("sma_20", 0)) if pd.notna(latest.get("sma_20")) else None,
-            "sma_50": float(latest.get("sma_50", 0)) if pd.notna(latest.get("sma_50")) else None,
+            "rsi": (float(latest.get("rsi_14", 0))
+                    if pd.notna(latest.get("rsi_14")) else None),
+            "macd": (float(latest.get("macd", 0))
+                     if pd.notna(latest.get("macd")) else None),
+            "sma_20": (float(latest.get("sma_20", 0))
+                       if pd.notna(latest.get("sma_20")) else None),
+            "sma_50": (float(latest.get("sma_50", 0))
+                       if pd.notna(latest.get("sma_50")) else None),
         }
 
-        return clean_for_json({"ticker": ticker, "signals": signals, "chart_data": chart_data, "latest": latest_info})
+        return clean_for_json({
+            "ticker": ticker,
+            "signals": signals,
+            "chart_data": chart_data,
+            "latest": latest_info,
+        })
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @app.get("/api/stock/{ticker}/monte-carlo")
-async def api_monte_carlo(ticker: str, days: int = 30, simulations: int = 1000, period: str = "1y"):
+async def api_monte_carlo(
+    ticker: str, days: int = 30,
+    simulations: int = 1000, period: str = "1y",
+):
     """Run Monte Carlo simulation."""
     try:
         df = fetch_stock_data(ticker, period=period)
-        result = monte_carlo_simulation(df["close"], days_ahead=days, num_simulations=simulations)
+        result = monte_carlo_simulation(
+            df["close"], days_ahead=days,
+            num_simulations=simulations,
+        )
         return clean_for_json({"ticker": ticker, **result})
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @app.get("/api/stock/{ticker}/predict")
 async def api_predict(ticker: str, period: str = "2y", horizon: int = 5, epochs: int = 30):
     """Run ML prediction."""
     try:
-        from ml_model import train_and_predict
         df = fetch_stock_data(ticker, period=period)
         df = compute_all_indicators(df)
         result = train_and_predict(df, forecast_horizon=horizon, epochs=epochs)
         return clean_for_json({"ticker": ticker, **result})
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @app.get("/api/stock/{ticker}/full-signal")
-async def api_full_signal(ticker: str, period: str = "1y", run_ml: bool = False, run_mc: bool = True):
+async def api_full_signal(
+    ticker: str, period: str = "1y",
+    run_ml: bool = False, run_mc: bool = True,
+):
     """Comprehensive signal using all available methods."""
     try:
         df = fetch_stock_data(ticker, period=period)
@@ -183,26 +202,31 @@ async def api_full_signal(ticker: str, period: str = "1y", run_ml: bool = False,
         mc_signal = None
 
         if run_mc:
-            mc = monte_carlo_simulation(df["close"], days_ahead=30, num_simulations=500)
+            mc = monte_carlo_simulation(
+                df["close"], days_ahead=30,
+                num_simulations=500,
+            )
             mc_signal = mc["final_distribution"]
 
         if run_ml:
-            from ml_model import train_and_predict
             df_2y = fetch_stock_data(ticker, period="2y")
             df_2y = compute_all_indicators(df_2y)
             ml_result = train_and_predict(df_2y)
             ml_signal = ml_result["forecast"]
 
-        signals = generate_composite_signal(df, ml_signal=ml_signal, mc_signal=mc_signal)
+        signals = generate_composite_signal(
+            df, ml_signal=ml_signal, mc_signal=mc_signal,
+        )
         return clean_for_json({"ticker": ticker, "signals": signals})
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 # ── Portfolio Endpoints ───────────────────────────────────────────────
 
 @app.post("/api/portfolio/buy")
 async def api_portfolio_buy(req: TradeRequest):
+    """Buy shares and add to portfolio."""
     if req.portfolio_id not in portfolios:
         portfolios[req.portfolio_id] = Portfolio()
     price = req.price
@@ -218,6 +242,7 @@ async def api_portfolio_buy(req: TradeRequest):
 
 @app.post("/api/portfolio/sell")
 async def api_portfolio_sell(req: TradeRequest):
+    """Sell shares from portfolio."""
     if req.portfolio_id not in portfolios:
         raise HTTPException(status_code=404, detail="Portfolio not found")
     price = req.price
@@ -233,6 +258,7 @@ async def api_portfolio_sell(req: TradeRequest):
 
 @app.get("/api/portfolio/{portfolio_id}")
 async def api_portfolio_summary(portfolio_id: str):
+    """Get portfolio summary with current market prices."""
     if portfolio_id not in portfolios:
         raise HTTPException(status_code=404, detail="Portfolio not found")
     port = portfolios[portfolio_id]
@@ -240,8 +266,11 @@ async def api_portfolio_summary(portfolio_id: str):
     for ticker in port.holdings:
         try:
             info = fetch_stock_info(ticker)
-            current_prices[ticker] = info.get("current_price") or info.get("previous_close", 0)
-        except Exception:
+            current_prices[ticker] = (
+                info.get("current_price")
+                or info.get("previous_close", 0)
+            )
+        except (OSError, ValueError, KeyError):
             current_prices[ticker] = port.holdings[ticker]["avg_cost"]
     summary = port.get_summary(current_prices)
     # Map field names for frontend compatibility
@@ -264,6 +293,7 @@ async def api_portfolio_summary(portfolio_id: str):
 
 @app.post("/api/portfolio/reset")
 async def api_portfolio_reset(initial_cash: float = 100000.0):
+    """Reset default portfolio to initial state."""
     portfolios["default"] = Portfolio(initial_cash)
     return {"message": "Portfolio reset", "initial_cash": initial_cash}
 
@@ -272,11 +302,13 @@ async def api_portfolio_reset(initial_cash: float = 100000.0):
 
 @app.get("/api/strategies")
 async def api_strategies():
+    """List available backtesting strategies."""
     return {"strategies": STRATEGIES}
 
 
 @app.post("/api/backtest")
 async def api_backtest(req: BacktestRequest):
+    """Run a backtest with the given configuration."""
     try:
         df = fetch_stock_data(req.ticker, period=req.period)
         result = backtest_strategy(
@@ -286,7 +318,7 @@ async def api_backtest(req: BacktestRequest):
         )
         return clean_for_json({"ticker": req.ticker, **result})
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 # ── Frontend-compatible Routes ────────────────────────────────────────
@@ -301,11 +333,18 @@ async def api_indicators(ticker: str, period: str = "1y"):
         chart_data = df_to_records(df.tail(min(len(df), 300)))
 
         latest = df.iloc[-1]
-        rsi_val = float(latest.get("rsi_14", 0)) if pd.notna(latest.get("rsi_14")) else None
-        ma_trend = "bullish" if pd.notna(latest.get("sma_20")) and pd.notna(latest.get("sma_50")) and latest["sma_20"] > latest["sma_50"] else "bearish"
+        rsi_val = (float(latest.get("rsi_14", 0))
+                   if pd.notna(latest.get("rsi_14")) else None)
+        has_smas = (pd.notna(latest.get("sma_20"))
+                    and pd.notna(latest.get("sma_50")))
+        ma_trend = ("bullish"
+                    if has_smas and latest["sma_20"] > latest["sma_50"]
+                    else "bearish")
         close = float(latest["close"])
-        bb_upper = float(latest.get("bb_upper", 0)) if pd.notna(latest.get("bb_upper")) else None
-        bb_lower = float(latest.get("bb_lower", 0)) if pd.notna(latest.get("bb_lower")) else None
+        bb_upper = (float(latest.get("bb_upper", 0))
+                    if pd.notna(latest.get("bb_upper")) else None)
+        bb_lower = (float(latest.get("bb_lower", 0))
+                    if pd.notna(latest.get("bb_lower")) else None)
 
         bb_position = "middle"
         if bb_upper and bb_lower:
@@ -331,15 +370,21 @@ async def api_indicators(ticker: str, period: str = "1y"):
 
         return clean_for_json({"data": chart_data, "summary": summary})
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @app.get("/api/montecarlo/{ticker}")
-async def api_montecarlo_compat(ticker: str, period: str = "1y", forecast_days: int = 30, simulations: int = 500):
+async def api_montecarlo_compat(
+    ticker: str, period: str = "1y",
+    forecast_days: int = 30, simulations: int = 500,
+):
     """Monte Carlo simulation in frontend-expected format."""
     try:
         df = fetch_stock_data(ticker, period=period)
-        result = monte_carlo_simulation(df["close"], days_ahead=forecast_days, num_simulations=simulations)
+        result = monte_carlo_simulation(
+            df["close"], days_ahead=forecast_days,
+            num_simulations=simulations,
+        )
 
         last_price = result["last_price"]
         final_dist = result["final_distribution"]
@@ -365,8 +410,16 @@ async def api_montecarlo_compat(ticker: str, period: str = "1y", forecast_days: 
             "current_price": last_price,
             "expected_return_pct": round(final_dist["expected_return_pct"], 2),
             "prob_profit": round(final_dist["prob_profit"] * 100, 1),
-            "var_5_pct": round((stats_raw["p5"][-1] - last_price) / last_price * 100, 2),
-            "annualized_volatility": float(np.std(np.log(np.array(stats_raw["p50"][1:]) / np.array(stats_raw["p50"][:-1]))) * np.sqrt(252)),
+            "var_5_pct": round(
+                (stats_raw["p5"][-1] - last_price)
+                / last_price * 100, 2,
+            ),
+            "annualized_volatility": float(
+                np.std(np.log(
+                    np.array(stats_raw["p50"][1:])
+                    / np.array(stats_raw["p50"][:-1])
+                )) * np.sqrt(252)
+            ),
             "best_case_95": stats_raw["p95"][-1],
             "expected_final_price": final_dist["mean"],
             "worst_case_5": stats_raw["p5"][-1],
@@ -374,28 +427,33 @@ async def api_montecarlo_compat(ticker: str, period: str = "1y", forecast_days: 
 
         return clean_for_json({"stats": stats, "forecast": forecast})
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @app.get("/api/ml/{ticker}")
 async def api_ml_compat(ticker: str, period: str = "2y", forecast_days: int = 30):
     """ML prediction in frontend-expected format."""
     try:
-        from ml_model import train_and_predict
         df = fetch_stock_data(ticker, period=period)
         df = compute_all_indicators(df)
         result = train_and_predict(df, forecast_horizon=forecast_days, epochs=30)
         return clean_for_json({"ticker": ticker, **result})
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @app.get("/api/backtest/{ticker}")
-async def api_backtest_compat(ticker: str, period: str = "2y", strategy: str = "combined", initial_capital: float = 100000.0):
+async def api_backtest_compat(
+    ticker: str, period: str = "2y", strategy: str = "combined",
+    initial_capital: float = 100000.0,
+):
     """Backtest via GET in frontend-expected format."""
     try:
         df = fetch_stock_data(ticker, period=period)
-        result = backtest_strategy(df, strategy=strategy, initial_cash=initial_capital)
+        result = backtest_strategy(
+            df, strategy=strategy,
+            initial_cash=initial_capital,
+        )
         perf = result["performance"]
 
         # Build portfolio_history from equity_curve
@@ -423,7 +481,7 @@ async def api_backtest_compat(ticker: str, period: str = "2y", strategy: str = "
             "portfolio_history": portfolio_history,
         })
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @app.get("/api/portfolio")
@@ -438,6 +496,7 @@ FRONTEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "f
 
 @app.get("/")
 async def serve_frontend():
+    """Serve the frontend index.html."""
     index = os.path.join(FRONTEND_DIR, "index.html")
     if os.path.exists(index):
         return FileResponse(index)
