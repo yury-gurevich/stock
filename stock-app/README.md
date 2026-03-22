@@ -33,7 +33,7 @@ Then open **http://localhost:8000** in your browser.
 ```
 stock-app/
 ├── backend/
-│   ├── app.py              # FastAPI REST API (12 endpoints)
+│   ├── app.py              # FastAPI REST API (20 endpoints)
 │   ├── data_fetcher.py     # Yahoo Finance data
 │   ├── indicators.py       # SMA, EMA, RSI, MACD, Bollinger
 │   ├── monte_carlo.py      # Monte Carlo simulation
@@ -50,19 +50,41 @@ stock-app/
 
 ## API Endpoints
 
+### Core Routes
+
 | Endpoint | Method | Description |
 |---|---|---|
 | `/api/search?q=` | GET | Search tickers |
-| `/api/stock/{ticker}` | GET | Stock metadata |
+| `/api/stock/{ticker}` | GET | Stock metadata + historical data |
 | `/api/stock/{ticker}/data` | GET | Historical OHLCV |
 | `/api/stock/{ticker}/analysis` | GET | Indicators + signals |
 | `/api/stock/{ticker}/monte-carlo` | GET | Monte Carlo sim |
 | `/api/stock/{ticker}/predict` | GET | LSTM prediction |
 | `/api/stock/{ticker}/full-signal` | GET | All-methods signal |
-| `/api/portfolio/{id}` | GET | Portfolio summary |
-| `/api/portfolio/buy` | POST | Buy shares |
-| `/api/portfolio/sell` | POST | Sell shares |
+
+### Frontend-Compatible Routes
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/indicators/{ticker}` | GET | Indicators + signals (flat format) |
+| `/api/montecarlo/{ticker}` | GET | Monte Carlo with date-stamped forecast |
+| `/api/ml/{ticker}` | GET | ML prediction (flat format) |
+| `/api/backtest/{ticker}` | GET | Backtest via GET with portfolio history |
+
+### Portfolio
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/portfolio` | GET | Default portfolio summary |
+| `/api/portfolio/{id}` | GET | Portfolio summary by ID |
+| `/api/portfolio/buy` | POST | Buy shares (price auto-fetched if omitted) |
+| `/api/portfolio/sell` | POST | Sell shares (price auto-fetched if omitted) |
 | `/api/portfolio/reset` | POST | Reset portfolio |
+
+### Backtesting
+
+| Endpoint | Method | Description |
+|---|---|---|
 | `/api/backtest` | POST | Run strategy backtest |
 | `/api/strategies` | GET | List strategies |
 
@@ -70,6 +92,7 @@ stock-app/
 
 - Python 3.10+
 - Internet connection (Yahoo Finance)
+- Conda environment recommended (see `requirements.txt`)
 
 ## Disclaimer
 
