@@ -51,15 +51,17 @@
         ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
         .mono { font-family: 'JetBrains Mono', monospace; }
-        
-        /* Layout */
-        .app-shell { display:flex; flex-direction:column; min-height:100vh; }
+
+        /* ── App shell ── */
+        .app-shell { display:flex; flex-direction:column; height:100vh; overflow:hidden; }
+
+        /* ── Top bar ── */
         .top-bar {
-            display:flex; align-items:center; justify-content:space-between;
-            padding:12px 24px; background:var(--bg-secondary);
-            border-bottom:1px solid var(--border); z-index:100;
+            display:flex; align-items:center; gap:12px;
+            padding:10px 20px; background:var(--bg-secondary);
+            border-bottom:1px solid var(--border); z-index:100; flex-shrink:0;
         }
-        .brand { display:flex; align-items:center; gap:10px; }
+        .brand { display:flex; align-items:center; gap:10px; flex-shrink:0; }
         .brand-icon {
             width:32px; height:32px; background:var(--gradient-brand);
             border-radius:8px; display:flex; align-items:center; justify-content:center;
@@ -68,21 +70,7 @@
         .brand-name { font-weight:700; font-size:18px; letter-spacing:-0.5px; }
         .brand-sub { color:var(--text-muted); font-size:11px; margin-left:8px; text-transform:uppercase; letter-spacing:1px; }
 
-        .search-area { display:flex; align-items:center; gap:8px; flex:1; max-width:480px; margin:0 32px; }
-        .search-input {
-            flex:1; padding:8px 14px; background:var(--bg-input); border:1px solid var(--border);
-            border-radius:var(--radius-sm); color:var(--text-primary); font-size:14px;
-            font-family:'JetBrains Mono',monospace; outline:none; transition:border 0.2s;
-        }
-        .search-input:focus { border-color:var(--accent-blue); }
-        .search-input::placeholder { color:var(--text-muted); }
-        .search-btn {
-            padding:8px 20px; background:var(--accent-blue); color:#fff; border:none;
-            border-radius:var(--radius-sm); font-size:13px; font-weight:600; cursor:pointer;
-            transition:all 0.2s;
-        }
-        .search-btn:hover { background:#2563eb; }
-        .search-btn:disabled { opacity:0.5; cursor:not-allowed; }
+        .top-bar-spacer { flex:1; }
 
         .period-pills { display:flex; gap:4px; }
         .period-pill {
@@ -92,32 +80,107 @@
         }
         .period-pill.active { background:var(--accent-blue); color:#fff; border-color:var(--accent-blue); }
 
-        /* Main Content */
-        .main-content { flex:1; display:flex; flex-direction:column; gap:16px; padding:16px 24px 24px; }
-
-        /* Stock Header */
-        .stock-header {
-            display:flex; align-items:flex-end; gap:20px; padding:16px 0;
+        .btn-methods {
+            padding:7px 14px; background:transparent; border:1px solid var(--border);
+            color:var(--text-secondary); border-radius:var(--radius-sm); font-size:13px;
+            cursor:pointer; transition:all 0.2s; white-space:nowrap; flex-shrink:0;
         }
-        .stock-ticker { font-size:28px; font-weight:700; font-family:'JetBrains Mono',monospace; letter-spacing:-1px; }
-        .stock-name { color:var(--text-secondary); font-size:14px; margin-bottom:2px; }
-        .stock-price { font-size:28px; font-weight:700; font-family:'JetBrains Mono',monospace; }
-        .stock-change { font-size:14px; font-weight:600; padding:3px 8px; border-radius:4px; }
-        .stock-change.up { color:var(--accent-green); background:var(--accent-green-bg); }
-        .stock-change.down { color:var(--accent-red); background:var(--accent-red-bg); }
-        .stock-meta { color:var(--text-muted); font-size:12px; display:flex; gap:16px; }
-        .stock-meta span { display:flex; align-items:center; gap:4px; }
+        .btn-methods:hover { border-color:var(--accent-blue); color:var(--text-primary); }
 
-        /* Tab Navigation */
-        .tabs { display:flex; gap:2px; background:var(--bg-secondary); border-radius:var(--radius); padding:3px; width:fit-content; }
-        .tab-btn {
-            padding:8px 18px; border:none; background:transparent; color:var(--text-secondary);
-            font-size:13px; font-weight:500; cursor:pointer; border-radius:7px; transition:all 0.2s;
+        /* ── App body ── */
+        .app-body { display:flex; flex:1; overflow:hidden; }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            width:220px; min-width:220px;
+            background:var(--bg-secondary); border-right:1px solid var(--border);
+            padding:16px 12px; display:flex; flex-direction:column; gap:12px;
+            overflow-y:auto; flex-shrink:0;
         }
-        .tab-btn.active { background:var(--bg-card); color:var(--text-primary); box-shadow:0 2px 8px rgba(0,0,0,0.2); }
-        .tab-btn:hover:not(.active) { color:var(--text-primary); }
+        .sidebar-label {
+            font-size:10px; text-transform:uppercase; letter-spacing:1px;
+            color:var(--text-muted); font-weight:600; padding:0 4px;
+        }
+        .sidebar-ticker-display {
+            font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:700;
+            padding:4px; color:var(--text-primary);
+        }
+        .sidebar-ticker-display span { color:var(--text-muted); font-size:12px; font-weight:400; display:block; margin-top:2px; }
 
-        /* Cards */
+        /* ── Main panel ── */
+        .main-panel {
+            flex:1; overflow-y:auto;
+            display:flex; flex-direction:column; gap:16px;
+            padding:16px 24px 24px;
+        }
+
+        /* ── Ticker Search ── */
+        .ticker-search {
+            position:relative; display:flex; align-items:center;
+            background:var(--bg-input); border:1px solid var(--border);
+            border-radius:var(--radius-sm); padding:0 10px; gap:6px;
+            transition:border 0.2s;
+        }
+        .ticker-search:focus-within { border-color:var(--border-active); }
+        .search-icon { font-size:14px; flex-shrink:0; }
+        .ticker-input {
+            flex:1; background:transparent; border:none;
+            color:var(--text-primary); font-size:13px;
+            font-family:'JetBrains Mono',monospace;
+            padding:9px 0; outline:none; min-width:0;
+        }
+        .ticker-input::placeholder { color:var(--text-muted); }
+        .search-results {
+            position:absolute; top:calc(100% + 4px); left:0; right:0;
+            background:var(--bg-card); border:1px solid var(--border);
+            border-radius:var(--radius-sm); z-index:300; overflow:hidden;
+            box-shadow:var(--shadow-lg);
+        }
+        .search-result {
+            padding:8px 12px; cursor:pointer; font-size:12px;
+            display:flex; align-items:baseline; gap:0;
+            transition:background 0.1s; overflow:hidden;
+        }
+        .search-result:hover { background:var(--bg-input); }
+        .search-result-symbol {
+            font-family:'JetBrains Mono',monospace; font-weight:600;
+            color:var(--text-primary); flex-shrink:0;
+        }
+        .search-result-name {
+            color:var(--text-muted); font-size:11px;
+            overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+        }
+
+        /* ── Modal ── */
+        .modal-overlay {
+            position:fixed; inset:0; background:rgba(0,0,0,0.65);
+            z-index:500; display:flex; align-items:center; justify-content:center;
+            padding:16px;
+        }
+        .modal-box {
+            background:var(--bg-card); border:1px solid var(--border);
+            border-radius:var(--radius); padding:24px;
+            min-width:300px; max-width:440px; width:100%;
+        }
+        .modal-title { font-size:16px; font-weight:600; margin-bottom:16px; }
+        .method-option {
+            display:flex; align-items:center; gap:10px;
+            padding:10px 0; border-bottom:1px solid var(--border);
+            cursor:pointer; font-size:14px; color:var(--text-primary);
+        }
+        .method-option:last-of-type { border-bottom:none; }
+        .method-option input[type="checkbox"] {
+            width:16px; height:16px; accent-color:var(--accent-blue); cursor:pointer;
+        }
+        .btn-primary {
+            margin-top:16px; width:100%; padding:10px;
+            background:var(--accent-blue); color:#fff; border:none;
+            border-radius:var(--radius-sm); font-size:14px; font-weight:600;
+            cursor:pointer; transition:background 0.2s;
+        }
+        .btn-primary:hover { background:#2563eb; }
+
+        /* ── Cards ── */
         .card {
             background:var(--bg-card); border:1px solid var(--border);
             border-radius:var(--radius); padding:20px; position:relative;
@@ -132,12 +195,12 @@
         .badge-sell { background:var(--accent-red-bg); color:var(--accent-red); }
         .badge-hold { background:var(--accent-orange-bg); color:var(--accent-orange); }
 
-        /* Grid layouts */
+        /* ── Grid layouts ── */
         .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
         .grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
         .grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
 
-        /* Stat boxes */
+        /* ── Stat boxes ── */
         .stat-box { padding:14px; background:var(--bg-secondary); border-radius:var(--radius-sm); }
         .stat-label { font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
         .stat-value { font-size:20px; font-weight:700; font-family:'JetBrains Mono',monospace; }
@@ -146,18 +209,39 @@
         .stat-value.blue { color:var(--accent-blue); }
         .stat-value.orange { color:var(--accent-orange); }
 
-        /* Charts */
+        /* ── Charts ── */
         .chart-container { width:100%; height:350px; }
         .chart-container-sm { width:100%; height:280px; }
 
-        /* Signal indicator */
+        /* ── Signal indicator ── */
         .signal-bar { display:flex; align-items:center; gap:8px; margin:8px 0; }
         .signal-dot { width:10px; height:10px; border-radius:50%; }
         .signal-dot.buy { background:var(--accent-green); box-shadow:0 0 8px var(--accent-green); }
         .signal-dot.sell { background:var(--accent-red); box-shadow:0 0 8px var(--accent-red); }
         .signal-dot.hold { background:var(--accent-orange); box-shadow:0 0 8px var(--accent-orange); }
 
-        /* Trade form */
+        /* ── Stock header ── */
+        .stock-header {
+            display:flex; align-items:flex-end; gap:20px; padding:8px 0;
+        }
+        .stock-ticker { font-size:28px; font-weight:700; font-family:'JetBrains Mono',monospace; letter-spacing:-1px; }
+        .stock-name { color:var(--text-secondary); font-size:14px; margin-bottom:2px; }
+        .stock-price { font-size:28px; font-weight:700; font-family:'JetBrains Mono',monospace; }
+        .stock-change { font-size:14px; font-weight:600; padding:3px 8px; border-radius:4px; }
+        .stock-change.up { color:var(--accent-green); background:var(--accent-green-bg); }
+        .stock-change.down { color:var(--accent-red); background:var(--accent-red-bg); }
+        .stock-meta { color:var(--text-muted); font-size:12px; display:flex; gap:16px; }
+
+        /* ── Tab navigation ── */
+        .tabs { display:flex; gap:2px; background:var(--bg-secondary); border-radius:var(--radius); padding:3px; width:fit-content; }
+        .tab-btn {
+            padding:8px 18px; border:none; background:transparent; color:var(--text-secondary);
+            font-size:13px; font-weight:500; cursor:pointer; border-radius:7px; transition:all 0.2s;
+        }
+        .tab-btn.active { background:var(--bg-card); color:var(--text-primary); box-shadow:0 2px 8px rgba(0,0,0,0.2); }
+        .tab-btn:hover:not(.active) { color:var(--text-primary); }
+
+        /* ── Trade form ── */
         .trade-form { display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap; }
         .form-group { display:flex; flex-direction:column; gap:4px; }
         .form-label { font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; }
@@ -176,11 +260,11 @@
             border-radius:var(--radius-sm); font-size:13px; font-weight:600; cursor:pointer;
         }
         .btn-reset {
-            padding:8px 16px; background:var(--bg-input); color:var(--text-secondary); border:1px solid var(--border);
-            border-radius:var(--radius-sm); font-size:12px; cursor:pointer;
+            padding:8px 16px; background:var(--bg-input); color:var(--text-secondary);
+            border:1px solid var(--border); border-radius:var(--radius-sm); font-size:12px; cursor:pointer;
         }
 
-        /* Table */
+        /* ── Table ── */
         .data-table { width:100%; border-collapse:collapse; font-size:13px; }
         .data-table th {
             text-align:left; padding:8px 12px; border-bottom:1px solid var(--border);
@@ -188,13 +272,13 @@
         }
         .data-table td { padding:8px 12px; border-bottom:1px solid var(--border); font-family:'JetBrains Mono',monospace; font-size:12px; }
 
-        /* Strategy selector */
+        /* ── Strategy selector ── */
         .strategy-select {
             padding:6px 12px; background:var(--bg-input); border:1px solid var(--border);
             border-radius:var(--radius-sm); color:var(--text-primary); font-size:12px; cursor:pointer;
         }
 
-        /* Loading spinner */
+        /* ── Loading spinner ── */
         .loading { display:flex; align-items:center; justify-content:center; padding:60px; color:var(--text-muted); }
         .spinner {
             width:20px; height:20px; border:2px solid var(--border); border-top-color:var(--accent-blue);
@@ -202,29 +286,28 @@
         }
         @keyframes spin { to { transform:rotate(360deg); } }
 
-        /* Empty state */
-        .empty-state {
-            text-align:center; padding:80px 20px; color:var(--text-muted);
-        }
+        /* ── Empty state ── */
+        .empty-state { text-align:center; padding:60px 20px; color:var(--text-muted); }
         .empty-state h2 { font-size:20px; margin-bottom:8px; color:var(--text-secondary); }
         .empty-state p { font-size:14px; }
 
-        /* Tooltip */
-        .recharts-tooltip-wrapper .custom-tooltip {
-            background:var(--bg-card) !important; border:1px solid var(--border) !important;
-            border-radius:var(--radius-sm); padding:10px 14px; font-size:12px;
-        }
-
-        /* Responsive */
+        /* ── Responsive ── */
         @media (max-width:1024px) {
-            .grid-4 { grid-template-columns: repeat(2,1fr); }
-            .grid-3 { grid-template-columns: 1fr; }
-            .grid-2 { grid-template-columns: 1fr; }
+            .sidebar { display:none; }
+            .grid-4 { grid-template-columns:repeat(2,1fr); }
+            .grid-3 { grid-template-columns:1fr; }
+            .grid-2 { grid-template-columns:1fr; }
         }
         @media (max-width:768px) {
-            .top-bar { flex-wrap:wrap; gap:8px; }
-            .search-area { max-width:100%; margin:0; order:3; }
-            .period-pills { order:4; }
+            .top-bar { flex-wrap:wrap; gap:8px; padding:10px 12px; }
+            .period-pills { order:3; flex-wrap:wrap; }
+            .btn-methods { order:4; }
+            .main-panel { padding:12px 12px 20px; }
+        }
+        @media (max-width:480px) {
+            .tabs { flex-wrap:wrap; width:100%; }
+            .tab-btn { flex:1; text-align:center; padding:8px 10px; font-size:12px; }
+            .stock-header { flex-wrap:wrap; gap:12px; }
         }
     </style>
 </head>
@@ -277,7 +360,7 @@ function useFetch(url, deps=[]) {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    
+
     const fetchData = useCallback(async () => {
         if (!url) return;
         setLoading(true);
@@ -290,19 +373,111 @@ function useFetch(url, deps=[]) {
             setData(json);
         } catch (e) {
             setError(e.message);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     }, [url]);
 
     useEffect(() => { fetchData(); }, [fetchData, ...deps]);
     return { data, loading, error, refetch: fetchData };
 }
 
+// ── Ticker Search ─────────────────────────────────────
+function TickerSearch({ onSelect }) {
+    const [q, setQ] = useState("");
+    const [results, setResults] = useState([]);
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+
+    useEffect(() => {
+        const handler = (e) => {
+            if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, []);
+
+    const search = useCallback(async (val) => {
+        if (!val || val.length < 1) { setResults([]); setOpen(false); return; }
+        try {
+            const res = await fetch(`${API}/api/search?q=${encodeURIComponent(val)}`);
+            const json = await res.json();
+            const r = json.results || [];
+            setResults(r);
+            setOpen(r.length > 0);
+        } catch (e) {
+            setResults([]);
+        }
+    }, []);
+
+    useEffect(() => {
+        const timer = setTimeout(() => search(q), 300);
+        return () => clearTimeout(timer);
+    }, [q, search]);
+
+    const pick = (symbol) => {
+        setQ("");
+        setResults([]);
+        setOpen(false);
+        onSelect(symbol);
+    };
+
+    const onKey = (e) => {
+        if (e.key === "Enter" && q.trim()) pick(q.trim().toUpperCase());
+    };
+
+    return (
+        <div className="ticker-search" ref={ref}>
+            <span className="search-icon">🔍</span>
+            <input
+                className="ticker-input"
+                placeholder="Search ticker… (e.g. AAPL)"
+                value={q}
+                onChange={e => setQ(e.target.value.toUpperCase())}
+                onKeyDown={onKey}
+            />
+            {open && results.length > 0 && (
+                <div className="search-results">
+                    {results.map(r => (
+                        <div key={r.symbol} className="search-result" onMouseDown={() => pick(r.symbol)}>
+                            <span className="search-result-symbol">{r.symbol}</span>
+                            <span className="search-result-name"> — {r.name}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ── Method Selector Modal ─────────────────────────────
+function MethodSelector({ onConfirm }) {
+    const opts = [
+        { id: "indicators", label: "Technical Indicators" },
+        { id: "montecarlo", label: "Monte Carlo Simulation" },
+        { id: "ml",         label: "ML Price Prediction" },
+        { id: "backtest",   label: "Strategy Backtest" },
+    ];
+    return (
+        <div className="modal-overlay" onClick={onConfirm}>
+            <div className="modal-box" onClick={e => e.stopPropagation()}>
+                <div className="modal-title">⚙ Analysis Methods</div>
+                {opts.map(o => (
+                    <label key={o.id} className="method-option">
+                        <input type="checkbox" defaultChecked />
+                        {o.label}
+                    </label>
+                ))}
+                <button className="btn-primary" onClick={onConfirm}>Run Analysis</button>
+            </div>
+        </div>
+    );
+}
+
 // ── Price Chart Component ─────────────────────────────
 function PriceChart({ data, indicators }) {
     if (!data?.length) return null;
-    
-    // Merge indicator data with price data
+
     const merged = data.map(d => {
         const ind = indicators?.data?.find(i => i.date === d.date);
         return { ...d, ...ind };
@@ -311,7 +486,7 @@ function PriceChart({ data, indicators }) {
     return (
         <div className="card">
             <div className="card-header">
-                <span className="card-title">Price & Indicators</span>
+                <span className="card-title">Price &amp; Indicators</span>
                 {indicators?.summary && signalBadge(indicators.summary.action)}
             </div>
             <div className="chart-container">
@@ -338,7 +513,7 @@ function PriceChart({ data, indicators }) {
 function IndicatorCharts({ indicators }) {
     if (!indicators?.data?.length) return null;
     const data = indicators.data.filter(d => d.rsi != null);
-    
+
     return (
         <div className="grid-2">
             <div className="card">
@@ -382,7 +557,7 @@ function IndicatorCharts({ indicators }) {
 function SignalSummary({ indicators }) {
     const s = indicators?.summary;
     if (!s) return null;
-    
+
     return (
         <div className="card">
             <div className="card-title" style={{marginBottom:12}}>Signal Analysis</div>
@@ -500,7 +675,6 @@ function MLView({ ticker, period }) {
     if (error) return <div className="loading" style={{color:"var(--accent-red)"}}>Error: {error}</div>;
     if (!data) return null;
 
-    // Combine historical + forecast for chart
     const chartData = [
         ...data.historical_predictions.map(d => ({ ...d, type: "historical" })),
         ...data.forecast.map(d => ({ ...d, type: "forecast" })),
@@ -601,7 +775,7 @@ function BacktestView({ ticker, period }) {
                     <div className={`stat-value ${pctColor(data.total_return_pct)}`}>{data.total_return_pct > 0 ? "+" : ""}{data.total_return_pct}%</div>
                 </div>
                 <div className="stat-box">
-                    <div className="stat-label">Buy & Hold Return</div>
+                    <div className="stat-label">Buy &amp; Hold Return</div>
                     <div className={`stat-value ${pctColor(data.buy_hold_return_pct)}`}>{data.buy_hold_return_pct > 0 ? "+" : ""}{data.buy_hold_return_pct}%</div>
                 </div>
                 <div className="stat-box">
@@ -636,7 +810,7 @@ function BacktestView({ ticker, period }) {
                     <div className="card-title" style={{marginBottom:12}}>Trade Log</div>
                     <div style={{maxHeight:300,overflowY:"auto"}}>
                         <table className="data-table">
-                            <thead><tr><th>Date</th><th>Type</th><th>Price</th><th>Shares</th><th>P&L</th></tr></thead>
+                            <thead><tr><th>Date</th><th>Type</th><th>Price</th><th>Shares</th><th>P&amp;L</th></tr></thead>
                             <tbody>
                                 {data.trades.map((t,i) => (
                                     <tr key={i}>
@@ -696,7 +870,6 @@ function PortfolioView({ ticker, currentPrice }) {
 
     return (
         <div style={{display:"flex",flexDirection:"column",gap:16}}>
-            {/* Trade Form */}
             <div className="card">
                 <div className="card-title" style={{marginBottom:12}}>Trade {ticker || "—"}</div>
                 <div className="trade-form">
@@ -720,8 +893,7 @@ function PortfolioView({ ticker, currentPrice }) {
                     </div>
                 )}
             </div>
-            
-            {/* Portfolio Summary */}
+
             {portfolio && (
                 <>
                     <div className="grid-4">
@@ -734,11 +906,11 @@ function PortfolioView({ ticker, currentPrice }) {
                             <div className="stat-value mono">${fmtK(portfolio.cash)}</div>
                         </div>
                         <div className="stat-box">
-                            <div className="stat-label">Unrealized P&L</div>
+                            <div className="stat-label">Unrealized P&amp;L</div>
                             <div className={`stat-value ${pctColor(portfolio.unrealized_pnl)}`}>${fmt(portfolio.unrealized_pnl)}</div>
                         </div>
                         <div className="stat-box">
-                            <div className="stat-label">Realized P&L</div>
+                            <div className="stat-label">Realized P&amp;L</div>
                             <div className={`stat-value ${pctColor(portfolio.realized_pnl)}`}>${fmt(portfolio.realized_pnl)}</div>
                         </div>
                     </div>
@@ -746,7 +918,7 @@ function PortfolioView({ ticker, currentPrice }) {
                         <div className="card">
                             <div className="card-title" style={{marginBottom:12}}>Holdings</div>
                             <table className="data-table">
-                                <thead><tr><th>Ticker</th><th>Shares</th><th>Avg Price</th><th>Current</th><th>Market Value</th><th>P&L</th><th>P&L %</th></tr></thead>
+                                <thead><tr><th>Ticker</th><th>Shares</th><th>Avg Price</th><th>Current</th><th>Market Value</th><th>P&amp;L</th><th>P&amp;L %</th></tr></thead>
                                 <tbody>
                                     {portfolio.holdings.map((h,i) => (
                                         <tr key={i}>
@@ -791,12 +963,90 @@ function PortfolioView({ ticker, currentPrice }) {
     );
 }
 
+// ── Dashboard Page ────────────────────────────────────
+function DashboardPage({ ticker, period, stockData, indicators, loading, onSelectTicker }) {
+    const [activeTab, setActiveTab] = useState("indicators");
+
+    const currentPrice = stockData?.data?.[stockData.data.length - 1]?.close;
+    const prevPrice    = stockData?.data?.[stockData.data.length - 2]?.close;
+    const changePct    = currentPrice && prevPrice ? ((currentPrice - prevPrice) / prevPrice * 100) : 0;
+
+    const tabs = [
+        { id:"indicators", label:"Indicators" },
+        { id:"montecarlo", label:"Monte Carlo" },
+        { id:"ml",         label:"ML Prediction" },
+        { id:"backtest",   label:"Backtest" },
+        { id:"portfolio",  label:"Portfolio" },
+    ];
+
+    return (
+        <div style={{display:"flex",flexDirection:"column",gap:16}}>
+            {/* Always-visible ticker search */}
+            <div className="card" style={{maxWidth:480}}>
+                <TickerSearch onSelect={onSelectTicker} />
+            </div>
+
+            {!ticker && !loading && (
+                <div className="empty-state">
+                    <h2>Welcome to StockForge</h2>
+                    <p>Search for a ticker above (or in the sidebar) to begin analysis. Supports global exchanges — AAPL, TSLA, BHP.AX, 7203.T</p>
+                </div>
+            )}
+
+            {loading && (
+                <div className="loading"><div className="spinner"></div>Loading...</div>
+            )}
+
+            {stockData && (
+                <div className="stock-header">
+                    <div>
+                        <div className="stock-ticker">{stockData.ticker}</div>
+                        <div className="stock-name">{stockData.meta?.name}</div>
+                    </div>
+                    <div style={{marginLeft:"auto",textAlign:"right"}}>
+                        <div className="stock-price">${fmt(currentPrice)}</div>
+                        <span className={`stock-change ${changePct >= 0 ? "up" : "down"}`}>
+                            {changePct >= 0 ? "▲" : "▼"} {Math.abs(changePct).toFixed(2)}%
+                        </span>
+                    </div>
+                    <div className="stock-meta" style={{display:"flex",flexDirection:"column",gap:2,marginLeft:20}}>
+                        {stockData.meta?.sector && <span>Sector: {stockData.meta.sector}</span>}
+                        {stockData.meta?.market_cap && <span>Mkt Cap: ${fmtK(stockData.meta.market_cap)}</span>}
+                        {stockData.meta?.pe_ratio && <span>P/E: {fmt(stockData.meta.pe_ratio,1)}</span>}
+                    </div>
+                </div>
+            )}
+
+            {ticker && (
+                <div className="tabs">
+                    {tabs.map(t => (
+                        <button key={t.id} className={`tab-btn ${activeTab===t.id?"active":""}`} onClick={()=>setActiveTab(t.id)}>
+                            {t.label}
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {activeTab === "indicators" && stockData && (
+                <>
+                    <PriceChart data={stockData.data} indicators={indicators} />
+                    <SignalSummary indicators={indicators} />
+                    <IndicatorCharts indicators={indicators} />
+                </>
+            )}
+            {activeTab === "montecarlo" && ticker && <MonteCarloView ticker={ticker} period={period} />}
+            {activeTab === "ml"         && ticker && <MLView ticker={ticker} period={period} />}
+            {activeTab === "backtest"   && ticker && <BacktestView ticker={ticker} period={period} />}
+            {activeTab === "portfolio"  && <PortfolioView ticker={ticker} currentPrice={currentPrice} />}
+        </div>
+    );
+}
+
 // ── Main App ──────────────────────────────────────────
 function App() {
     const [ticker, setTicker] = useState("");
-    const [searchInput, setSearchInput] = useState("AAPL");
     const [period, setPeriod] = useState("1y");
-    const [activeTab, setActiveTab] = useState("indicators");
+    const [showMethodSelector, setShowMethodSelector] = useState(false);
 
     const { data: stockData, loading: stockLoading } = useFetch(
         ticker ? `${API}/api/stock/${ticker}?period=${period}` : null, [ticker, period]
@@ -805,45 +1055,24 @@ function App() {
         ticker ? `${API}/api/indicators/${ticker}?period=${period}` : null, [ticker, period]
     );
 
-    const handleSearch = () => {
-        const t = searchInput.trim().toUpperCase();
-        if (t) setTicker(t);
-    };
+    const analyze = useCallback((symbol) => {
+        setTicker(symbol.trim().toUpperCase());
+    }, []);
 
-    const currentPrice = stockData?.data?.[stockData.data.length - 1]?.close;
-    const prevPrice = stockData?.data?.[stockData.data.length - 2]?.close;
-    const changePct = currentPrice && prevPrice ? ((currentPrice - prevPrice) / prevPrice * 100) : 0;
+    const handleConfirmMethods = () => setShowMethodSelector(false);
 
     const periods = ["1mo","3mo","6mo","1y","2y","5y"];
-    const tabs = [
-        { id:"indicators", label:"Indicators" },
-        { id:"montecarlo", label:"Monte Carlo" },
-        { id:"ml", label:"ML Prediction" },
-        { id:"backtest", label:"Backtest" },
-        { id:"portfolio", label:"Portfolio" },
-    ];
 
     return (
         <div className="app-shell">
-            {/* Top Bar */}
+            {/* ── Header ── */}
             <div className="top-bar">
                 <div className="brand">
                     <div className="brand-icon">SF</div>
                     <span className="brand-name">StockForge</span>
                     <span className="brand-sub">Trading Intelligence</span>
                 </div>
-                <div className="search-area">
-                    <input
-                        className="search-input"
-                        placeholder="Enter ticker (e.g. AAPL, TSLA, BHP.AX)..."
-                        value={searchInput}
-                        onChange={e => setSearchInput(e.target.value.toUpperCase())}
-                        onKeyDown={e => e.key === "Enter" && handleSearch()}
-                    />
-                    <button className="search-btn" onClick={handleSearch} disabled={stockLoading}>
-                        {stockLoading ? "Loading..." : "Analyze"}
-                    </button>
-                </div>
+                <div className="top-bar-spacer" />
                 <div className="period-pills">
                     {periods.map(p => (
                         <button key={p} className={`period-pill ${period===p?"active":""}`} onClick={()=>setPeriod(p)}>
@@ -851,61 +1080,43 @@ function App() {
                         </button>
                     ))}
                 </div>
+                <button className="btn-methods" onClick={() => setShowMethodSelector(true)}>
+                    ⚙ Methods
+                </button>
             </div>
 
-            <div className="main-content">
-                {/* Empty State */}
-                {!ticker && (
-                    <div className="empty-state">
-                        <h2>Welcome to StockForge</h2>
-                        <p>Enter a stock ticker above to begin analysis. Supports global exchanges (e.g. AAPL, TSLA, BHP.AX, 7203.T)</p>
-                    </div>
-                )}
+            {/* ── Methods Modal ── */}
+            {showMethodSelector && <MethodSelector onConfirm={handleConfirmMethods} />}
 
-                {/* Stock Header */}
-                {stockData && (
-                    <div className="stock-header">
-                        <div>
-                            <div className="stock-ticker">{stockData.ticker}</div>
-                            <div className="stock-name">{stockData.meta?.name}</div>
+            {/* ── Body ── */}
+            <div className="app-body">
+                {/* Sidebar (hidden ≤1024px via CSS) */}
+                <aside className="sidebar">
+                    <div className="sidebar-label">Ticker</div>
+                    <TickerSearch onSelect={analyze} />
+                    {ticker && (
+                        <div className="sidebar-ticker-display">
+                            {ticker}
+                            <span>{stockData?.meta?.name || ""}</span>
                         </div>
-                        <div style={{marginLeft:"auto",textAlign:"right"}}>
-                            <div className="stock-price">${fmt(currentPrice)}</div>
-                            <span className={`stock-change ${changePct >= 0 ? "up" : "down"}`}>
-                                {changePct >= 0 ? "▲" : "▼"} {Math.abs(changePct).toFixed(2)}%
-                            </span>
-                        </div>
-                        <div className="stock-meta" style={{display:"flex",flexDirection:"column",gap:2,marginLeft:20}}>
-                            {stockData.meta?.sector && <span>Sector: {stockData.meta.sector}</span>}
-                            {stockData.meta?.market_cap && <span>Mkt Cap: ${fmtK(stockData.meta.market_cap)}</span>}
-                            {stockData.meta?.pe_ratio && <span>P/E: {fmt(stockData.meta.pe_ratio,1)}</span>}
-                        </div>
+                    )}
+                    <div className="sidebar-label" style={{marginTop:8}}>Selected Period</div>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:13,color:"var(--text-secondary)",padding:"0 4px"}}>
+                        {period}
                     </div>
-                )}
+                </aside>
 
-                {/* Tabs */}
-                {ticker && (
-                    <div className="tabs">
-                        {tabs.map(t => (
-                            <button key={t.id} className={`tab-btn ${activeTab===t.id?"active":""}`} onClick={()=>setActiveTab(t.id)}>
-                                {t.label}
-                            </button>
-                        ))}
-                    </div>
-                )}
-
-                {/* Tab Content */}
-                {activeTab === "indicators" && stockData && (
-                    <>
-                        <PriceChart data={stockData.data} indicators={indicators} />
-                        <SignalSummary indicators={indicators} />
-                        <IndicatorCharts indicators={indicators} />
-                    </>
-                )}
-                {activeTab === "montecarlo" && ticker && <MonteCarloView ticker={ticker} period={period} />}
-                {activeTab === "ml" && ticker && <MLView ticker={ticker} period={period} />}
-                {activeTab === "backtest" && ticker && <BacktestView ticker={ticker} period={period} />}
-                {activeTab === "portfolio" && <PortfolioView ticker={ticker} currentPrice={currentPrice} />}
+                {/* Main content */}
+                <main className="main-panel">
+                    <DashboardPage
+                        ticker={ticker}
+                        period={period}
+                        stockData={stockData}
+                        indicators={indicators}
+                        loading={stockLoading}
+                        onSelectTicker={analyze}
+                    />
+                </main>
             </div>
         </div>
     );
